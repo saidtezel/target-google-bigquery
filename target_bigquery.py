@@ -244,16 +244,16 @@ def persist_lines_stream(project_id, config, lines=None, validate_records=True):
     for line in lines:
         try:
             js = json.loads(line)
-            msg = singer.parse_message(line)
-            # if js['type'] == 'RECORD':
-            #     msg = singer.messages.RecordMessage(
-            #         stream=js.get('stream'),
-            #         record=js.get('record'),
-            #         version=js.get('version'),
-            #         time_extracted=None
-            #     )
-            # else :
-            #     msg = singer.parse_message(line)
+            # msg = singer.parse_message(line)
+            if js['type'] == 'RECORD':
+                msg = singer.messages.RecordMessage(
+                    stream=js.get('stream'),
+                    record=js.get('record'),
+                    version=js.get('version'),
+                    time_extracted=None
+                )
+            else :
+                msg = singer.parse_message(line)
         except json.decoder.JSONDecodeError:
             logger.error("Unable to parse:\n{}".format(line))
             raise
