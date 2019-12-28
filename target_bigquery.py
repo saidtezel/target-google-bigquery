@@ -117,7 +117,7 @@ def persist_lines_job(config, lines=None, truncate=False, validate_records=True)
     errors = {}
 
     service = service_account.Credentials.from_service_account_file(
-        config['service_account_file']
+        config['key_file_location']
         )
 
     bigquery_client = bigquery.Client(
