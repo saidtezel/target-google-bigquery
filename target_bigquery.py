@@ -228,7 +228,6 @@ def persist_lines_stream(config, lines=None, validate_records=True):
         project=config['project_id'],
         credentials=service
     )
-    logger.info('BigQuery Client created.')
 
     dataset_ref = bigquery_client.dataset(config['dataset_id'])
     dataset = Dataset(dataset_ref)
@@ -236,8 +235,6 @@ def persist_lines_stream(config, lines=None, validate_records=True):
         dataset = bigquery_client.create_dataset(Dataset(dataset_ref)) or Dataset(dataset_ref)
     except exceptions.Conflict:
         pass
-
-    row_count = 0
 
     for line in lines:
         try:
@@ -267,10 +264,6 @@ def persist_lines_stream(config, lines=None, validate_records=True):
 
             errors[msg.stream] = bigquery_client.insert_rows_json(tables[msg.stream], [msg.record])
             rows[msg.stream] += 1
-
-            state = None
-            row_count += 1
-            logger.info(f'Wrote {row_count}.')
 
         elif isinstance(msg, singer.StateMessage):
             logger.debug('Setting state to {}'.format(msg.value))
