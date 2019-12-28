@@ -108,7 +108,7 @@ def build_schema(schema):
 
     return SCHEMA
 
-def persist_lines_job(project_id, config, lines=None, truncate=False, validate_records=True):
+def persist_lines_job(config, lines=None, truncate=False, validate_records=True):
     state = None
     schemas = {}
     key_properties = {}
@@ -121,7 +121,7 @@ def persist_lines_job(project_id, config, lines=None, truncate=False, validate_r
         )
 
     bigquery_client = bigquery.Client(
-        project=project_id,
+        project=config['project_id'],
         credentials=service
     )
 
@@ -211,7 +211,7 @@ def persist_lines_job(project_id, config, lines=None, truncate=False, validate_r
 
     return state
 
-def persist_lines_stream(project_id, config, lines=None, validate_records=True):
+def persist_lines_stream(config, lines=None, validate_records=True):
     state = None
     schemas = {}
     key_properties = {}
@@ -342,9 +342,9 @@ def main():
     input = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
     if config.get('stream_data', True):
-        state = persist_lines_stream(config['project_id'], config, input, validate_records=validate_records)
+        state = persist_lines_stream(config, input, validate_records=validate_records)
     else:
-        state = persist_lines_job(config['project_id'], config['dataset_id'], input, truncate=truncate, validate_records=validate_records)
+        state = persist_lines_job(config, input, truncate=truncate, validate_records=validate_records)
 
     emit_state(state)
     logger.debug("Exiting normally")
