@@ -108,7 +108,7 @@ def build_schema(schema):
 
     return SCHEMA
 
-def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, validate_records=True):
+def persist_lines_job(project_id, config, lines=None, truncate=False, validate_records=True):
     state = None
     schemas = {}
     key_properties = {}
@@ -188,7 +188,7 @@ def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, valida
             raise Exception("Unrecognized message {}".format(msg))
 
     for table in rows.keys():
-        table_ref = bigquery_client.dataset(dataset_id).table(table)
+        table_ref = bigquery_client.dataset(config['dataset_id']).table(table)
         SCHEMA = build_schema(schemas[table])
         load_config = LoadJobConfig()
         load_config.schema = SCHEMA
@@ -203,8 +203,6 @@ def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, valida
             rows[table], table_ref, job_config=load_config)
         logger.info("loading job {}".format(load_job.job_id))
         logger.info(load_job.result())
-
-
     # for table in errors.keys():
     #     if not errors[table]:
     #         print('Loaded {} row(s) into {}:{}'.format(rows[table], dataset_id, table), tables[table].path)
