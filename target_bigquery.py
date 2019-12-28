@@ -213,7 +213,7 @@ def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, valida
 
     return state
 
-def persist_lines_stream(project_id, dataset_id, lines=None, validate_records=True):
+def persist_lines_stream(project_id, config, lines=None, validate_records=True):
     state = None
     schemas = {}
     key_properties = {}
@@ -272,7 +272,7 @@ def persist_lines_stream(project_id, dataset_id, lines=None, validate_records=Tr
 
             state = None
             row_count += 1
-            logger.info(f'Wrote {row_count} rows.')
+            logger.info(f'Wrote {row_count}.')
 
         elif isinstance(msg, singer.StateMessage):
             logger.debug('Setting state to {}'.format(msg.value))
@@ -344,7 +344,7 @@ def main():
     input = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
     if config.get('stream_data', True):
-        state = persist_lines_stream(config['project_id'], config['dataset_id'], input, validate_records=validate_records)
+        state = persist_lines_stream(config['project_id'], config, input, validate_records=validate_records)
     else:
         state = persist_lines_job(config['project_id'], config['dataset_id'], input, truncate=truncate, validate_records=validate_records)
 
