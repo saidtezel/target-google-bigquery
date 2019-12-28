@@ -125,6 +125,7 @@ def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, valida
         credentials=service
     )
 
+
     # try:
     #     dataset = bigquery_client.create_dataset(Dataset(dataset_ref)) or Dataset(dataset_ref)
     # except exceptions.Conflict:
@@ -212,7 +213,7 @@ def persist_lines_job(project_id, dataset_id, lines=None, truncate=False, valida
 
     return state
 
-def persist_lines_stream(config, lines=None):
+def persist_lines_stream(project_id, dataset_id, lines=None, validate_records=True):
     state = None
     schemas = {}
     key_properties = {}
@@ -229,6 +230,7 @@ def persist_lines_stream(config, lines=None):
         project=config['project_id'],
         credentials=service
     )
+    logger.info('BigQuery Client created.')
 
     dataset_ref = bigquery_client.dataset(config['dataset_id'])
     dataset = Dataset(dataset_ref)
@@ -237,18 +239,21 @@ def persist_lines_stream(config, lines=None):
     except exceptions.Conflict:
         pass
 
+    row_count = 0
+
     for line in lines:
         try:
             js = json.loads(line)
-            if js['type'] == 'RECORD':
-                msg = singer.messages.RecordMessage(
-                    stream=js.get('stream'),
-                    record=js.get('record'),
-                    version=js.get('version'),
-                    time_extracted=None
-                )
-            else :
-                msg = singer.parse_message(line)
+            msg = singer.parse_message(line)
+            # if js['type'] == 'RECORD':
+            #     msg = singer.messages.RecordMessage(
+            #         stream=js.get('stream'),
+            #         record=js.get('record'),
+            #         version=js.get('version'),
+            #         time_extracted=None
+            #     )
+            # else :
+            #     msg = singer.parse_message(line)
         except json.decoder.JSONDecodeError:
             logger.error("Unable to parse:\n{}".format(line))
             raise
@@ -259,13 +264,15 @@ def persist_lines_stream(config, lines=None):
 
             schema = schemas[msg.stream]
 
-            if config['validate_records']:
+            if validate_records:
                 validate(msg.record, schema)
 
             errors[msg.stream] = bigquery_client.insert_rows_json(tables[msg.stream], [msg.record])
             rows[msg.stream] += 1
 
             state = None
+            row_count += 1
+            logger.info(f'Wrote {row_count} rows.')
 
         elif isinstance(msg, singer.StateMessage):
             logger.debug('Setting state to {}'.format(msg.value))
@@ -337,9 +344,9 @@ def main():
     input = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
     if config.get('stream_data', True):
-        state = persist_lines_stream(config, input)
+        state = persist_lines_stream(config['project_id'], config['dataset_id'], input, validate_records=validate_records)
     else:
-        state = persist_lines_job(config, input, truncate=truncate, validate_records=validate_records)
+        state = persist_lines_job(config['project_id'], config['dataset_id'], input, truncate=truncate, validate_records=validate_records)
 
     emit_state(state)
     logger.debug("Exiting normally")
